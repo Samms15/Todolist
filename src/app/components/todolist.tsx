@@ -12,7 +12,6 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-
 type Task = {
   id: string;
   text: string;
@@ -109,6 +108,47 @@ export default function TodoList() {
     setTasks(tasks.filter((task) => task.id !== id));
   };
 
+  const editTask = async (id: string): Promise<void> => {
+    const taskToEdit = tasks.find((task) => task.id === id);
+    if (!taskToEdit) return;
+
+    const { value: formValues } = await Swal.fire({
+      title: 'Edit Tugas',
+      html:
+        `<input id="swal-input1" class="swal2-input" value="${taskToEdit.text}" placeholder="Nama tugas">` +
+        `<input id="swal-input2" type="datetime-local" class="swal2-input" value="${taskToEdit.deadline}">`,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Simpan',
+      cancelButtonText: 'Batal',
+      preConfirm: () => {
+        return [
+          (document.getElementById('swal-input1') as HTMLInputElement)?.value,
+          (document.getElementById('swal-input2') as HTMLInputElement)?.value,
+        ];
+      },
+    });
+
+    if (formValues && formValues[0] && formValues[1]) {
+      const updatedTask = {
+        ...taskToEdit,
+        text: formValues[0],
+        deadline: formValues[1],
+      };
+
+      const taskRef = doc(db, 'tasks', id);
+      await updateDoc(taskRef, {
+        text: updatedTask.text,
+        deadline: updatedTask.deadline,
+      });
+
+      const newTasks = tasks.map((task) =>
+        task.id === id ? updatedTask : task
+      );
+      setTasks(newTasks);
+    }
+  };
+
   return (
     <div className="max-w-md mx-auto mt-10 p-4 bg-white shadow-md rounded-lg">
       <h1 className="text-2xl text-emerald-500 font-bold mb-4">To-Do List</h1>
@@ -151,12 +191,20 @@ export default function TodoList() {
                   >
                     {task.text}
                   </span>
-                  <button
-                    onClick={() => deleteTask(task.id)}
-                    className="text-white p-1 rounded bg-red-600 hover:bg-red-800"
-                  >
-                    Hapus
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => editTask(task.id)}
+                      className="text-white p-1 rounded bg-blue-600 hover:bg-blue-800"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteTask(task.id)}
+                      className="text-white p-1 rounded bg-red-600 hover:bg-red-800"
+                    >
+                      Hapus
+                    </button>
+                  </div>
                 </div>
                 <p className="text-sm text-gray-700">
                   Deadline: {new Date(task.deadline).toLocaleString()}
@@ -172,4 +220,3 @@ export default function TodoList() {
     </div>
   );
 }
-
