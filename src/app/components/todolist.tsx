@@ -22,6 +22,19 @@ type Task = {
 export default function TodoList() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [timeRemaining, setTimeRemaining] = useState<{ [key: string]: string }>({});
+  const [darkMode, setDarkMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    const savedMode = localStorage.getItem('darkMode');
+    if (savedMode) setDarkMode(JSON.parse(savedMode));
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
+
+  const toggleDarkMode = () => setDarkMode((prev) => !prev);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -148,73 +161,83 @@ export default function TodoList() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-4 bg-white shadow-md rounded-lg">
-      <h1 className="text-2xl text-emerald-500 font-bold mb-4">To-Do List</h1>
-      <div className="flex justify-center mb-4">
-        <button
-          onClick={addTask}
-          className="bg-slate-500 text-white px-4 py-2 rounded"
-        >
-          Tambah Tugas
-        </button>
-      </div>
-      <ul>
-        <AnimatePresence>
-          {tasks.map((task) => {
-            const timeLeft = calculateTimeRemaining(task.deadline);
-            const isExpired = timeLeft === 'Waktu habis!';
-            const taskColor = task.completed
-              ? 'bg-green-200'
-              : isExpired
-              ? 'bg-red-200'
-              : 'bg-yellow-200';
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300 text-gray-800 dark:text-gray-200">
+      <div className="max-w-md mx-auto mt-10 p-4 bg-white dark:bg-gray-800 shadow-md rounded-lg">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">To-Do List</h1>
+          <button
+            onClick={toggleDarkMode}
+            className="text-sm bg-slate-700 text-white px-3 py-1 rounded"
+          >
+            {darkMode ? '☀️ Light' : '🌙 Dark'}
+          </button>
+        </div>
+        <div className="flex justify-center mb-4">
+          <button
+            onClick={addTask}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded"
+          >
+            Tambah Tugas
+          </button>
+        </div>
+        <ul>
+          <AnimatePresence>
+            {tasks.map((task) => {
+              const timeLeft = calculateTimeRemaining(task.deadline);
+              const isExpired = timeLeft === 'Waktu habis!';
+              const taskColor = task.completed
+                ? 'bg-green-200 dark:bg-green-600'
+                : isExpired
+                ? 'bg-red-200 dark:bg-red-600'
+                : 'bg-yellow-200 dark:bg-yellow-600';
 
-            return (
-              <motion.li
-                key={task.id}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className={`flex flex-col justify-between p-2 border-b rounded-lg ${taskColor}`}
-              >
-                <div className="flex justify-between items-center">
-                  <span
-                    onClick={() => toggleTask(task.id)}
-                    className={`cursor-pointer transition-500 ${
-                      task.completed
-                        ? 'line-through text-gray-500'
-                        : 'font-semibold text-gray-700'
-                    }`}
-                  >
-                    {task.text}
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => editTask(task.id)}
-                      className="text-white p-1 rounded bg-blue-600 hover:bg-blue-800"
+              return (
+                <motion.li
+                  key={task.id}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className={`flex flex-col justify-between p-2 border-b rounded-lg ${taskColor}`}
+                >
+                  <div className="flex justify-between items-center">
+                    <span
+                      onClick={() => toggleTask(task.id)}
+                      className={`cursor-pointer transition-500 ${
+                        task.completed
+                          ? 'line-through text-gray-500 dark:text-gray-300'
+                          : 'font-semibold text-gray-700 dark:text-white'
+                      }`}
                     >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => deleteTask(task.id)}
-                      className="text-white p-1 rounded bg-red-600 hover:bg-red-800"
-                    >
-                      Hapus
-                    </button>
+                      {task.text}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => editTask(task.id)}
+                        className="text-white p-1 rounded bg-blue-600 hover:bg-blue-800"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => deleteTask(task.id)}
+                        className="text-white p-1 rounded bg-red-600 hover:bg-red-800"
+                      >
+                        Hapus
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <p className="text-sm text-gray-700">
-                  Deadline: {new Date(task.deadline).toLocaleString()}
-                </p>
-                <p className="text-xs font-semibold text-gray-700">
-                  ⏳ {timeRemaining[task.id] || 'Menghitung...'}
-                </p>
-              </motion.li>
-            );
-          })}
-        </AnimatePresence>
-      </ul>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Deadline: {new Date(task.deadline).toLocaleString()}
+                  </p>
+                  <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                    ⏳ {timeRemaining[task.id] || 'Menghitung...'}
+                  </p>
+                </motion.li>
+              );
+            })}
+          </AnimatePresence>
+        </ul>
+      </div>
     </div>
   );
 }
