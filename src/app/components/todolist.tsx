@@ -37,6 +37,7 @@ export default function TodoList() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [timeRemaining, setTimeRemaining] = useState<{ [key: string]: string }>({});
   const [quote, setQuote] = useState('');
+  const [backgroundMode, setBackgroundMode] = useState('default');
 
   useEffect(() => {
     setQuote(getRandomQuote());
@@ -59,7 +60,6 @@ export default function TodoList() {
       });
       setTimeRemaining(newTimeRemaining);
     }, 1000);
-
     return () => clearInterval(interval);
   }, [tasks]);
 
@@ -67,13 +67,10 @@ export default function TodoList() {
     const deadlineTime = new Date(deadline).getTime();
     const now = new Date().getTime();
     const difference = deadlineTime - now;
-
     if (difference <= 0) return 'Waktu habis!';
-
     const hours = Math.floor(difference / (1000 * 60 * 60));
     const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
     return `${hours}j ${minutes}m ${seconds}d`;
   };
 
@@ -119,12 +116,7 @@ export default function TodoList() {
     if (toggledTask?.completed) {
       const sound = new Howl({ src: ['/success.mp3'] });
       sound.play();
-
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 
       Swal.fire({
         icon: 'success',
@@ -182,12 +174,39 @@ export default function TodoList() {
     }
   };
 
+  const getBackgroundClass = () => {
+    switch (backgroundMode) {
+      case 'dark':
+        return 'bg-gray-900 text-white';
+      case 'gradient':
+        return 'bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 text-white';
+      case 'pattern':
+        return 'bg-[url("/pattern.svg")] bg-cover text-gray-900';
+      default:
+        return 'bg-gradient-to-br from-gray-100 via-white to-gray-200 text-gray-800';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-white to-gray-200 text-gray-800 transition-all duration-300">
-      <div className="max-w-lg mx-auto mt-10 p-6 bg-white shadow-xl rounded-2xl">
+    <div className={`min-h-screen transition-all duration-300 ${getBackgroundClass()}`}>
+      <div className="max-w-lg mx-auto mt-10 p-6 bg-white/80 backdrop-blur-md shadow-xl rounded-2xl">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-emerald-500">📝 To-Do List</h1>
         </div>
+
+        <div className="mb-4 flex justify-end gap-2">
+          <select
+            value={backgroundMode}
+            onChange={(e) => setBackgroundMode(e.target.value)}
+            className="px-3 py-1 rounded border border-gray-300 text-sm"
+          >
+            <option value="default">🌤️ Default</option>
+            <option value="dark">🌙 Gelap</option>
+            <option value="gradient">🌈 Gradien</option>
+            <option value="pattern">🌀 Pola</option>
+          </select>
+        </div>
+
         <p className="text-sm text-center italic text-gray-600 mb-4">💡 {quote}</p>
         <div className="flex justify-center mb-6">
           <button
@@ -198,6 +217,7 @@ export default function TodoList() {
           </button>
         </div>
 
+        {/* Progress */}
         {tasks.length > 0 && (
           <div className="mb-6">
             <div className="flex justify-between text-sm font-medium text-gray-700 mb-1">
