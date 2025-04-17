@@ -1,5 +1,6 @@
-'use client';
+'use client'; // Menandakan ini adalah Client Component (Next.js dengan App Router)
 
+// Import React hooks dan pustaka eksternal
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
@@ -11,10 +12,11 @@ import {
   doc,
   updateDoc,
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db } from '../lib/firebase'; // Koneksi ke Firebase
 import confetti from 'canvas-confetti';
 import { Howl } from 'howler';
 
+// Daftar kutipan motivasi
 const quotes = [
   'Tetap semangat! Satu tugas lagi 💪',
   'Fokus itu kekuatan! 🔥',
@@ -22,10 +24,12 @@ const quotes = [
   'Tugas kecil hari ini = sukses besar nanti 📈',
 ];
 
+// Fungsi untuk memilih kutipan acak
 const getRandomQuote = () => {
   return quotes[Math.floor(Math.random() * quotes.length)];
 };
 
+// Tipe data tugas
 type Task = {
   id: string;
   text: string;
@@ -34,11 +38,12 @@ type Task = {
 };
 
 export default function TodoList() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [timeRemaining, setTimeRemaining] = useState<{ [key: string]: string }>({});
-  const [quote, setQuote] = useState('');
-  const [backgroundMode, setBackgroundMode] = useState('default');
+  const [tasks, setTasks] = useState<Task[]>([]); // Daftar tugas
+  const [timeRemaining, setTimeRemaining] = useState<{ [key: string]: string }>({}); // Sisa waktu setiap tugas
+  const [quote, setQuote] = useState(''); // Kutipan motivasi saat ini
+  const [backgroundMode, setBackgroundMode] = useState('default'); // Mode latar belakang
 
+  // Ambil data tugas dari Firebase saat komponen dimuat
   useEffect(() => {
     setQuote(getRandomQuote());
     const fetchTasks = async () => {
@@ -52,6 +57,7 @@ export default function TodoList() {
     fetchTasks();
   }, []);
 
+  // Update waktu tersisa untuk setiap tugas setiap detik
   useEffect(() => {
     const interval = setInterval(() => {
       const newTimeRemaining: { [key: string]: string } = {};
@@ -63,6 +69,7 @@ export default function TodoList() {
     return () => clearInterval(interval);
   }, [tasks]);
 
+  // Fungsi untuk menghitung sisa waktu
   const calculateTimeRemaining = (deadline: string): string => {
     const deadlineTime = new Date(deadline).getTime();
     const now = new Date().getTime();
@@ -74,6 +81,7 @@ export default function TodoList() {
     return `${hours}j ${minutes}m ${seconds}d`;
   };
 
+  // Tambah tugas baru dengan input dari pengguna
   const addTask = async (): Promise<void> => {
     const { value: formValues } = await Swal.fire({
       title: 'Tambahkan tugas baru',
@@ -100,9 +108,18 @@ export default function TodoList() {
       };
       const docRef = await addDoc(collection(db, 'tasks'), newTask);
       setTasks([...tasks, { id: docRef.id, ...newTask }]);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Tugas ditambahkan!',
+        text: 'Semangat menyelesaikannya 💪',
+        timer: 1500,
+        showConfirmButton: false,
+      });
     }
   };
 
+  // Toggle status selesai tugas
   const toggleTask = async (id: string): Promise<void> => {
     const updatedTasks = tasks.map((task) =>
       task.id === id ? { ...task, completed: !task.completed } : task
@@ -113,6 +130,7 @@ export default function TodoList() {
     const taskRef = doc(db, 'tasks', id);
     await updateDoc(taskRef, { completed: toggledTask?.completed });
 
+    // Jika tugas selesai, tampilkan efek
     if (toggledTask?.completed) {
       const sound = new Howl({ src: ['/success.mp3'] });
       sound.play();
@@ -128,11 +146,34 @@ export default function TodoList() {
     }
   };
 
+  // Hapus tugas
   const deleteTask = async (id: string): Promise<void> => {
-    await deleteDoc(doc(db, 'tasks', id));
-    setTasks(tasks.filter((task) => task.id !== id));
+    const result = await Swal.fire({
+      title: 'Apakah kamu yakin?',
+      text: 'Tugas ini akan dihapus secara permanen.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e3342f',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Ya, hapus!',
+      cancelButtonText: 'Batal',
+    });
+
+    if (result.isConfirmed) {
+      await deleteDoc(doc(db, 'tasks', id));
+      setTasks(tasks.filter((task) => task.id !== id));
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Terhapus!',
+        text: 'Tugas telah berhasil dihapus.',
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    }
   };
 
+  // Edit tugas
   const editTask = async (id: string): Promise<void> => {
     const taskToEdit = tasks.find((task) => task.id === id);
     if (!taskToEdit) return;
@@ -174,6 +215,7 @@ export default function TodoList() {
     }
   };
 
+  // Tentukan kelas latar belakang berdasarkan mode
   const getBackgroundClass = () => {
     switch (backgroundMode) {
       case 'dark':
@@ -190,10 +232,12 @@ export default function TodoList() {
   return (
     <div className={`min-h-screen transition-all duration-300 ${getBackgroundClass()}`}>
       <div className="max-w-lg mx-auto mt-10 p-6 bg-white/80 backdrop-blur-md shadow-xl rounded-2xl">
+        {/* Header dan mode latar */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-emerald-500">📝 To-Do List</h1>
         </div>
 
+        {/* Pilihan mode latar belakang */}
         <div className="mb-4 flex justify-end gap-2">
           <select
             value={backgroundMode}
@@ -207,7 +251,10 @@ export default function TodoList() {
           </select>
         </div>
 
+        {/* Kutipan motivasi */}
         <p className="text-sm text-center italic text-gray-600 mb-4">💡 {quote}</p>
+
+        {/* Tombol tambah tugas */}
         <div className="flex justify-center mb-6">
           <button
             onClick={addTask}
@@ -217,7 +264,7 @@ export default function TodoList() {
           </button>
         </div>
 
-        {/* Progress */}
+        {/* Progress bar jika ada tugas */}
         {tasks.length > 0 && (
           <div className="mb-6">
             <div className="flex justify-between text-sm font-medium text-gray-700 mb-1">
@@ -237,6 +284,7 @@ export default function TodoList() {
           </div>
         )}
 
+        {/* Daftar tugas */}
         <ul>
           <AnimatePresence>
             {tasks.map((task) => {
@@ -267,6 +315,7 @@ export default function TodoList() {
                     >
                       {task.text}
                     </span>
+                    {/* Aksi: Selesai, Edit, Hapus */}
                     <div className="flex gap-2">
                       <button
                         onClick={() => toggleTask(task.id)}
@@ -303,3 +352,5 @@ export default function TodoList() {
     </div>
   );
 }
+
+
